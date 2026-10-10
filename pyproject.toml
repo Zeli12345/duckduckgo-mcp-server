@@ -1,6 +1,6 @@
 [project]
 name = "duckduckgo-mcp-server"
-version = "0.7.0"
+version = "0.8.0"
 description = "MCP Server for searching via DuckDuckGo"
 readme = "README.md"
 authors = [{ name = "Nick Clyde", email = "nick@clyde.tech" }]
@@ -19,8 +19,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nickclyde/duckduckgo-mcp-server"
-Issues = "https://github.com/nickclyde/duckduckgo-mcp-server/issues"
+Homepage = "https://github.com/Zeli12345/duckduckgo-mcp-server"
+Issues = "https://github.com/Zeli12345/duckduckgo-mcp-server/issues"
+Upstream = "https://github.com/nickclyde/duckduckgo-mcp-server"
 
 # Optional extras. Install with e.g. `pip install duckduckgo-mcp-server[browser]`.
 [project.optional-dependencies]
@@ -28,6 +29,9 @@ Issues = "https://github.com/nickclyde/duckduckgo-mcp-server/issues"
 # curl_cffi to impersonate a real browser's TLS fingerprint so fetch_content
 # can pass through TLS-fingerprint-based bot filters. Not needed for basic use.
 browser = ["curl_cffi>=0.7.0"]
+# Enables SOCKS proxies (socks4/socks5/socks5h) for the httpx backend. The curl
+# backend supports SOCKS natively via libcurl and does not need this extra.
+socks = ["socksio>=1.0.0"]
 
 [project.scripts]
 duckduckgo-mcp-server = "duckduckgo_mcp_server.server:main"

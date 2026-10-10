@@ -185,3 +185,14 @@ async def test_fetch_content_tool_accepts_ref_token(local_http_server, allow_pri
     async with Client(mcp_app) as client:
         result = await client.call_tool("fetch_content", {"url": token})
         assert "Via Token" in result.content[0].text
+
+
+@pytest.mark.asyncio
+async def test_both_tools_list_proxy_in_schema():
+    """The `proxy` parameter should be advertised on both tools."""
+    async with Client(mcp_app) as client:
+        tools_result = await client.list_tools()
+        for name in ("search", "fetch_content"):
+            tool = next(t for t in tools_result.tools if t.name == name)
+            props = tool.input_schema.get("properties", {})
+            assert "proxy" in props, f"expected 'proxy' in {name} input schema, got: {list(props)}"

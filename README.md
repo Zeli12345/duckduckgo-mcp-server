@@ -1,21 +1,24 @@
-# DuckDuckGo Search MCP Server
+# DuckDuckGo Search MCP Server (proxy fork)
 
-[![PyPI version](https://img.shields.io/pypi/v/duckduckgo-mcp-server)](https://pypi.org/project/duckduckgo-mcp-server/)
-[![PyPI downloads](https://img.shields.io/pypi/dm/duckduckgo-mcp-server)](https://pypi.org/project/duckduckgo-mcp-server/)
-[![Python versions](https://img.shields.io/pypi/pyversions/duckduckgo-mcp-server)](https://pypi.org/project/duckduckgo-mcp-server/)
+> **Fork of [nickclyde/duckduckgo-mcp-server](https://github.com/nickclyde/duckduckgo-mcp-server)** (MIT).
+> This fork adds first-class **proxy support** to both tools (`search` and `fetch_content`, with per-call
+> overrides) and uses the **latest Chrome** TLS impersonation automatically instead of a pinned Chrome version.
 
 A Model Context Protocol (MCP) server that provides web search capabilities through DuckDuckGo, with additional features for content fetching and parsing.
 
 ## Quick Start
 
+Run this fork directly from GitHub:
+
 ```bash
-uvx duckduckgo-mcp-server
+uvx --from "duckduckgo-mcp-server[browser] @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server
 ```
 
 ## Features
 
 - **Web Search**: Search DuckDuckGo with advanced rate limiting and result formatting
 - **Content Fetching**: Retrieve and parse webpage content with intelligent text extraction
+- **Proxy Support**: Route search and fetch traffic through an HTTP(S) or SOCKS proxy — server-wide or per call
 - **Long URL Shortening**: Over-long result URLs become short `ref://` tokens that `fetch_content` accepts directly, saving context
 - **Rate Limiting**: Built-in protection against rate limits for both search and content fetching
 - **Error Handling**: Comprehensive error handling and logging
@@ -23,10 +26,10 @@ uvx duckduckgo-mcp-server
 
 ## Installation
 
-Install from PyPI using `uv`:
+Install this fork (from GitHub) using `uv`:
 
 ```bash
-uv pip install duckduckgo-mcp-server
+uv pip install "duckduckgo-mcp-server @ git+https://github.com/Zeli12345/duckduckgo-mcp-server"
 ```
 
 ## Usage
@@ -40,28 +43,41 @@ uv pip install duckduckgo-mcp-server
 
 Add the following configuration:
 
-**Basic Configuration (No SafeSearch, No Default Region):**
+**Basic Configuration:**
 ```json
 {
     "mcpServers": {
         "ddg-search": {
             "command": "uvx",
-            "args": ["duckduckgo-mcp-server"]
+            "args": [
+                "--from",
+                "duckduckgo-mcp-server[browser] @ git+https://github.com/Zeli12345/duckduckgo-mcp-server",
+                "duckduckgo-mcp-server",
+                "--fetch-backend",
+                "auto"
+            ]
         }
     }
 }
 ```
 
-**With SafeSearch and Region Configuration:**
+**With SafeSearch, Region, and a Proxy:**
 ```json
 {
     "mcpServers": {
         "ddg-search": {
             "command": "uvx",
-            "args": ["duckduckgo-mcp-server"],
+            "args": [
+                "--from",
+                "duckduckgo-mcp-server[browser] @ git+https://github.com/Zeli12345/duckduckgo-mcp-server",
+                "duckduckgo-mcp-server",
+                "--fetch-backend",
+                "auto"
+            ],
             "env": {
                 "DDG_SAFE_SEARCH": "STRICT",
-                "DDG_REGION": "cn-zh"
+                "DDG_REGION": "cn-zh",
+                "DDG_PROXY": "http://127.0.0.1:7890"
             }
         }
     }
@@ -80,6 +96,7 @@ Add the following configuration:
   - `wt-wt`: No specific region
   - Leave empty for DuckDuckGo's default behavior
 - `DDG_CA_CERTS`: Path to a PEM CA bundle used to verify TLS certificates on outbound requests (optional). Needed behind TLS-intercepting proxies — see [Running behind a TLS-intercepting proxy](#running-behind-a-tls-intercepting-proxy).
+- `DDG_PROXY`: Default proxy for both tools (e.g. `http://127.0.0.1:7890` or `socks5h://127.0.0.1:9150`). Overrides the standard `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` variables. See [Proxy support](#proxy-support).
 - `DDG_RATE_LIMIT_STRATEGY`: `sliding` (default, historical 60s window) or `token_bucket` (burst, then smooth).
 - `DDG_SEARCH_RPM`: Search requests per minute (default: `30`).
 - `DDG_FETCH_RPM`: Global `fetch_content` requests per minute (default: `20`).
@@ -95,7 +112,7 @@ Add the following configuration:
 
 1. Download [Claude Code](https://github.com/anthropics/claude-code)
 2. Ensure [`uvenv`](https://github.com/robinvandernoord/uvenv) is installed and the `uvx` command is available
-3. Add the MCP server: `claude mcp add ddg-search uvx duckduckgo-mcp-server`
+3. Add the MCP server: `claude mcp add ddg-search uvx --from "duckduckgo-mcp-server @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server`
 
 ### Running with SSE or Streamable HTTP
 
@@ -103,10 +120,10 @@ The server supports alternative transports for use with other MCP clients:
 
 ```bash
 # SSE transport
-uvx duckduckgo-mcp-server --transport sse
+uvx --from "duckduckgo-mcp-server @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server --transport sse
 
 # Streamable HTTP transport
-uvx duckduckgo-mcp-server --transport streamable-http
+uvx --from "duckduckgo-mcp-server @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server --transport streamable-http
 ```
 
 The default transport is `stdio`, which is used by Claude Desktop and Claude Code.
@@ -114,7 +131,7 @@ The default transport is `stdio`, which is used by Claude Desktop and Claude Cod
 When running with `sse` or `streamable-http`, override the default bind address (`127.0.0.1:8000`) with the `--host` and `--port` flags:
 
 ```bash
-uvx duckduckgo-mcp-server --transport streamable-http --host 0.0.0.0 --port 7070
+uvx --from "duckduckgo-mcp-server @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server --transport streamable-http --host 0.0.0.0 --port 7070
 ```
 
 #### Running behind a reverse proxy or in Docker
@@ -124,7 +141,7 @@ The MCP SDK enables DNS-rebinding protection for the HTTP transports and, by def
 Fix it by allow-listing the host(s) and origin(s) clients actually use (preferred over disabling protection). Values support `host`, `host:port`, and wildcard-port `host:*`:
 
 ```bash
-uvx duckduckgo-mcp-server --transport streamable-http --host 0.0.0.0 --port 7070 \
+uvx --from "duckduckgo-mcp-server @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server --transport streamable-http --host 0.0.0.0 --port 7070 \
   --allowed-hosts ddg-mcp.example.com "ddg-mcp.example.com:*" \
   --allowed-origins "https://ddg-mcp.example.com"
 ```
@@ -138,12 +155,79 @@ As a last resort you can turn the check off entirely with `--disable-dns-rebindi
 Corporate proxies that re-sign HTTPS traffic with their own CA (via `HTTPS_PROXY`) cause outbound requests to fail with certificate verification errors, because the HTTP clients don't trust the proxy's self-signed CA (and httpx no longer reads the `SSL_CERT_FILE` environment variable). Point the server at your proxy's CA bundle:
 
 ```bash
-uvx duckduckgo-mcp-server --ca-certs /path/to/proxy-ca.pem
+uvx --from "duckduckgo-mcp-server @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server --ca-certs /path/to/proxy-ca.pem
 ```
 
 Or set `DDG_CA_CERTS=/path/to/proxy-ca.pem`. The bundle is used by both the `search` and `fetch_content` tools, on the httpx and curl backends alike.
 
 As a last resort, `--no-ssl-verify` (or `DDG_SSL_VERIFY=0`) disables certificate verification entirely. This exposes traffic to interception by anyone on the network path — prefer `--ca-certs`.
+
+### Proxy support
+
+Both the `search` and `fetch_content` tools route their outbound requests through an HTTP(S) or SOCKS proxy when one is configured. The proxy applies to everything the server fetches — DuckDuckGo searches and page downloads alike.
+
+**Configuration sources** (first match wins):
+
+1. **Per-call argument**: the `proxy` argument on either tool, e.g. `search(query="...", proxy="socks5h://127.0.0.1:9150")`. Pass `"direct"` to bypass the configured proxy for that single call.
+2. **`--proxy` CLI flag**: e.g. `--proxy http://127.0.0.1:7890`.
+3. **`DDG_PROXY` environment variable**.
+4. **Standard environment variables**: `HTTPS_PROXY` / `HTTP_PROXY` / `ALL_PROXY` (and lowercase variants).
+
+Supported URL schemes: `http://`, `https://`, `socks4://`, `socks4a://`, `socks5://`, `socks5h://`. Credentials can be embedded in the URL: `http://user:pass@proxy:8080`.
+
+**Notes:**
+
+- SOCKS proxies work out of the box with the `curl` backend (libcurl speaks SOCKS natively). The `httpx` backend needs the optional `socks` extra (or just `pip install socksio`). Under the default `auto` search backend, a SOCKS proxy automatically switches to curl.
+- Use `socks5h://` (not `socks5://`) to let the proxy resolve hostnames — avoids DNS leaks and is required for Tor.
+- Rotating proxies work transparently: point `DDG_PROXY` at a gateway that rotates upstream (e.g. a residential proxy endpoint).
+- TLS-intercepting proxies additionally need `DDG_CA_CERTS` (see [Running behind a TLS-intercepting proxy](#running-behind-a-tls-intercepting-proxy)).
+- Proxy settings are read once at server startup; restart the server after changing them.
+
+**Example** (Claude Desktop, routing through a local Clash/mihomo port):
+
+```json
+{
+    "mcpServers": {
+        "ddg-search": {
+            "command": "uvx",
+            "args": [
+                "--from",
+                "duckduckgo-mcp-server[browser,socks] @ git+https://github.com/Zeli12345/duckduckgo-mcp-server",
+                "duckduckgo-mcp-server",
+                "--fetch-backend",
+                "auto"
+            ],
+            "env": {
+                "DDG_PROXY": "http://127.0.0.1:7890"
+            }
+        }
+    }
+}
+```
+
+**Example** (OpenCode `opencode.json`):
+
+```jsonc
+{
+  "mcp": {
+    "ddg-search": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from", "duckduckgo-mcp-server[browser] @ git+https://github.com/Zeli12345/duckduckgo-mcp-server",
+        "duckduckgo-mcp-server",
+        "--fetch-backend", "auto"
+      ],
+      "enabled": true,
+      "timeout": 20000,
+      "environment": {
+        // Optional: route all traffic through a local proxy
+        "DDG_PROXY": "http://127.0.0.1:7890"
+      }
+    }
+  }
+}
+```
 
 ### Backends (bypassing bot detection)
 
@@ -155,10 +239,10 @@ Both the `search` tool and the `fetch_content` tool support these backends.
 
 ```bash
 # Default install (httpx only)
-uv pip install duckduckgo-mcp-server
+uv pip install "duckduckgo-mcp-server @ git+https://github.com/Zeli12345/duckduckgo-mcp-server"
 
 # With the optional browser backend
-uv pip install "duckduckgo-mcp-server[browser]"
+uv pip install "duckduckgo-mcp-server[browser] @ git+https://github.com/Zeli12345/duckduckgo-mcp-server"
 ```
 
 **Backend options:**
@@ -166,7 +250,7 @@ uv pip install "duckduckgo-mcp-server[browser]"
 | Value  | Behavior                                                                                  | Needs `[browser]` |
 | ------ | ----------------------------------------------------------------------------------------- | ----------------- |
 | `httpx` | Lightweight async HTTP. Default. Works on most sites.                                     | no                |
-| `curl` | Uses `curl_cffi` with Chrome 131 TLS impersonation. Passes TLS-fingerprint-based filters. | yes               |
+| `curl` | Uses `curl_cffi` with the latest Chrome TLS impersonation. Passes TLS-fingerprint-based filters. | yes               |
 | `auto` | Tries `httpx` first; on 403 or a Cloudflare challenge response, retries with `curl`.      | yes               |
 
 **Two ways to configure the backend:**
@@ -175,13 +259,13 @@ uv pip install "duckduckgo-mcp-server[browser]"
 
    ```bash
    # Default behavior — uses httpx
-   uvx duckduckgo-mcp-server
+   uvx --from "duckduckgo-mcp-server @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server
 
    # Force curl for every fetch (requires the [browser] extra)
-   uvx --with "duckduckgo-mcp-server[browser]" duckduckgo-mcp-server --fetch-backend curl
+   uvx --from "duckduckgo-mcp-server[browser] @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server --fetch-backend curl
 
    # Try httpx first, fall back to curl on 403 / Cloudflare challenge
-   uvx --with "duckduckgo-mcp-server[browser]" duckduckgo-mcp-server --fetch-backend auto
+   uvx --from "duckduckgo-mcp-server[browser] @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server --fetch-backend auto
    ```
 
 2. **Per-call override** via the `backend` argument on the `fetch_content` tool (overrides the CLI default for that single call). The tool exposes `backend` in its input schema, so an MCP client can choose `"httpx"`, `"curl"`, or `"auto"` on a fetch-by-fetch basis.
@@ -196,13 +280,13 @@ Configure the search backend with the `--search-backend` CLI flag or the `DDG_SE
 
 ```bash
 # Recommended: install the browser extra so the auto fallback can impersonate Chrome
-uvx --with "duckduckgo-mcp-server[browser]" duckduckgo-mcp-server
+uvx --from "duckduckgo-mcp-server[browser] @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server
 
 # Force curl for every search
-uvx --with "duckduckgo-mcp-server[browser]" duckduckgo-mcp-server --search-backend curl
+uvx --from "duckduckgo-mcp-server[browser] @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server --search-backend curl
 
 # Opt out of the fallback (legacy behavior — may return no results while blocked)
-uvx duckduckgo-mcp-server --search-backend httpx
+uvx --from "duckduckgo-mcp-server @ git+https://github.com/Zeli12345/duckduckgo-mcp-server" duckduckgo-mcp-server --search-backend httpx
 ```
 
 ### Development
@@ -234,7 +318,12 @@ uv run python -m pytest src/duckduckgo_mcp_server/test_e2e.py -v
 ### 1. Search Tool
 
 ```python
-async def search(query: str, max_results: int = 10, region: str = "") -> str
+async def search(
+    query: str,
+    max_results: int = 10,
+    region: str = "",
+    proxy: Optional[str] = None,
+) -> str
 ```
 
 Performs a web search on DuckDuckGo and returns formatted results.
@@ -243,6 +332,7 @@ Performs a web search on DuckDuckGo and returns formatted results.
 - `query`: Search query string
 - `max_results`: Maximum number of results to return (default: 10)
 - `region`: (Optional) Region/language code to override the default. Leave empty to use the configured default region.
+- `proxy`: (Optional) Proxy URL for this call (e.g. `http://127.0.0.1:7890` or `socks5h://127.0.0.1:9150`). Overrides the server-wide proxy; pass `direct` to bypass it.
 
 **Region Code Examples:**
 - `us-en`: United States (English)
@@ -268,6 +358,7 @@ async def fetch_content(
     max_length: int = 8000,
     backend: Optional[str] = None,
     parse_mode: Optional[str] = None,
+    proxy: Optional[str] = None,
 ) -> str
 ```
 
@@ -279,6 +370,7 @@ Fetches and parses content from a webpage.
 - `max_length`: Maximum number of characters to return
 - `backend`: Optional per-call override of the default fetch backend (`"httpx"`, `"curl"`, or `"auto"`). When omitted, uses whatever was set via `--fetch-backend` at server startup.
 - `parse_mode`: Optional per-call extractor (`"text"`, `"main"`, or `"markdown"`). When omitted, uses `DDG_PARSE_MODE` / `--parse-mode` (default `text`).
+- `proxy`: (Optional) Proxy URL for this call. Overrides the server-wide proxy; pass `direct` to bypass it.
 
 **Returns:**
 Cleaned and formatted text content from the webpage. The parsed full page is cached in memory (default 5 minutes) so later pages via `start_index` do not re-download. Metadata includes `cache=hit` or `cache=miss` when the cache is enabled.
@@ -365,8 +457,8 @@ Issues and pull requests are welcome!
 
 ## License
 
-This project is licensed under the MIT License.
+MIT. This is a fork of [nickclyde/duckduckgo-mcp-server](https://github.com/nickclyde/duckduckgo-mcp-server); the original license and copyright notice are preserved in [LICENSE](LICENSE).
 
-## Star History
+## Upstream
 
-[![Star History Chart](https://api.star-history.com/svg?repos=nickclyde/duckduckgo-mcp-server&type=Date)](https://star-history.com/#nickclyde/duckduckgo-mcp-server&Date)
+Original project: [nickclyde/duckduckgo-mcp-server](https://github.com/nickclyde/duckduckgo-mcp-server).
